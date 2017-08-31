@@ -1,0 +1,26 @@
+diff -Nur srcregi/Book.java srcuj/Book.java
+--- srcregi/Book.java	2014-05-18 03:59:16.000000000 +0200
++++ srcuj/Book.java	2014-05-25 14:50:38.656041900 +0200
+@@ -1,5 +1,6 @@
+ package hu.bme.mit.ftsrg.bookdatabase.model;
+ 
++import hu.bme.mit.ftsrg.bookdatabase.BookDatabaseApplication;
+ import org.json.JSONObject;
+ 
+ public final class Book implements Comparable<Book> {
+@@ -56,6 +57,7 @@
+ 
+ 	public static Book fromJSON(JSONObject json) {
+ 		if (json == null) {
++            BookDatabaseApplication.logger.warn("Unable to create new book!");
+ 			throw new IllegalArgumentException("The JSON data is null");
+ 		}
+ 
+@@ -63,7 +65,7 @@
+ 		String title = json.getString("title");
+ 		int year = json.getInt("year");
+ 		String isbn = json.getString("isbn");
+-
++        BookDatabaseApplication.logger.info("New book creation was succesful!");
+ 		return new Book(author, title, year, isbn);
+ 	}

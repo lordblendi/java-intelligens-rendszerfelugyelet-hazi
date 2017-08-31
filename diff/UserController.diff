@@ -1,0 +1,50 @@
+diff -Nur srcregi/UserController.java srcuj/UserController.java
+--- srcregi/UserController.java	2014-05-18 03:59:16.000000000 +0200
++++ srcuj/UserController.java	2014-05-25 14:49:35.587041400 +0200
+@@ -1,5 +1,7 @@
+ package hu.bme.mit.ftsrg.bookdatabase.handler;
+ 
++import hu.bme.mit.ftsrg.bookdatabase.BookDatabaseApplication;
++import hu.bme.mit.ftsrg.bookdatabase.model.Book;
+ import hu.bme.mit.ftsrg.bookdatabase.model.BookDatabaseModel;
+ import hu.bme.mit.ftsrg.bookdatabase.model.User;
+ 
+@@ -44,16 +46,18 @@
+ 					// password ok
+ 					UUID sessionID = UUID.randomUUID();
+ 					getModel().sessions().put(sessionID, modelUser);
+-
++                    BookDatabaseApplication.logger.info("Login OK.");
+ 					jsonResponse.put("status", "ok");
+ 					jsonResponse.put("sessionID", sessionID.toString());
+ 				} else {
+ 					// password invalid
++                    BookDatabaseApplication.logger.info("Invalid credentials.");
+ 					jsonResponse.put("status", "error");
+ 					jsonResponse.put("message", "Invalid credentials");
+ 				}
+ 			}
+ 		} catch (Exception e) {
++            BookDatabaseApplication.logger.warn("Login was unsuccesful.");
+ 			jsonResponse.put("status", "error");
+ 			jsonResponse.put("message",
+ 					e.getClass().getSimpleName() + ": " + e.getMessage());
+@@ -82,14 +86,17 @@
+ 				if (user != null) {
+ 					// logged in
+ 					getModel().sessions().remove(sessionID);
++                    BookDatabaseApplication.logger.info("Logout OK.");
+ 					jsonResponse.put("status", "ok");
+ 				} else {
+ 					// not logged in
++                    BookDatabaseApplication.logger.info("User is not logged in.");
+ 					jsonResponse.put("status", "error");
+-					jsonResponse.put("message", "User is not logged in");
++					jsonResponse.put("message", "User was not logged in");
+ 				}
+ 			}
+ 		} catch (Exception e) {
++            BookDatabaseApplication.logger.warn("Logout was unsuccesful.");
+ 			jsonResponse.put("status", "error");
+ 			jsonResponse.put("message",
+ 					e.getClass().getSimpleName() + ": " + e.getMessage());

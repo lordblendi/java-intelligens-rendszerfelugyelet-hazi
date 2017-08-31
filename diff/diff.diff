@@ -1,0 +1,294 @@
+diff -Nur srcregi/Book.java srcuj/Book.java
+--- srcregi/Book.java	2014-05-18 03:59:16.000000000 +0200
++++ srcuj/Book.java	2014-05-25 14:50:38.656041900 +0200
+@@ -1,5 +1,6 @@
+ package hu.bme.mit.ftsrg.bookdatabase.model;
+ 
++import hu.bme.mit.ftsrg.bookdatabase.BookDatabaseApplication;
+ import org.json.JSONObject;
+ 
+ public final class Book implements Comparable<Book> {
+@@ -56,6 +57,7 @@
+ 
+ 	public static Book fromJSON(JSONObject json) {
+ 		if (json == null) {
++            BookDatabaseApplication.logger.warn("Unable to create new book!");
+ 			throw new IllegalArgumentException("The JSON data is null");
+ 		}
+ 
+@@ -63,7 +65,7 @@
+ 		String title = json.getString("title");
+ 		int year = json.getInt("year");
+ 		String isbn = json.getString("isbn");
+-
++        BookDatabaseApplication.logger.info("New book creation was succesful!");
+ 		return new Book(author, title, year, isbn);
+ 	}
+ 
+diff -Nur srcregi/BookDatabaseApplication.java srcuj/BookDatabaseApplication.java
+--- srcregi/BookDatabaseApplication.java	2014-05-18 03:59:16.000000000 +0200
++++ srcuj/BookDatabaseApplication.java	2014-05-25 14:55:26.952041500 +0200
+@@ -24,6 +24,12 @@
+ import org.w3c.dom.NodeList;
+ import org.xml.sax.SAXException;
+ 
++import org.apache.log4j.*;
++
++/**
++ * Hozzáadtam egy statikus változót, a loggert. Annak az elérésével bármelyik osztályból tudok logolni.
++ * Ennek a beállításait a konstruktorban végeztem el a logger.properties fájl segítségével.
++ */
+ public final class BookDatabaseApplication {
+ 	private final int port;
+ 	private final File configXML;
+@@ -31,9 +37,12 @@
+ 	private final PrintStream err;
+ 	private BookDatabaseModel model;
+ 
++    public static Logger logger = Logger.getLogger(BookDatabaseApplication.class);
++
+ 	public BookDatabaseApplication(int port, File configXML, PrintStream out,
+ 			PrintStream err) {
+ 
++        PropertyConfigurator.configure("logger.properties");
+ 		this.port = port;
+ 		this.configXML = configXML;
+ 		this.out = out;
+@@ -53,6 +62,7 @@
+ 			out.println("== Starting server ==");
+ 			startServer();
+ 		} catch (BookDatabaseException e) {
++            logger.error("Starting server was unsuccesful!");
+ 			err.println("Exception: " + e.getMessage());
+ 
+ 			if (e.getCause() != null) {
+@@ -64,6 +74,7 @@
+ 	private void parseConfig() throws BookDatabaseException {
+ 		try {
+ 			model = new BookDatabaseModel();
++            logger.debug("Parsing config!");
+ 
+ 			// read and normalise XML
+ 			DocumentBuilder builder = DocumentBuilderFactory.newInstance()
+@@ -78,10 +89,14 @@
+ 				parseBooks(rootElement);
+ 				parsePages(rootElement);
+ 			} else {
++                logger.error("Parsing the configuration was unsuccesful!");
+ 				throw new BookDatabaseException(
+ 						"Configuration file: the root element should be <config>");
+ 			}
++
++            logger.info("Configuration parsing was succesful!");
+ 		} catch (ParserConfigurationException | SAXException | IOException e) {
++            logger.error("Parsing the configuration was unsuccesful!");
+ 			throw new BookDatabaseException(
+ 					"Unexpected exception occured when parsing"
+ 							+ " the configuration file (see details)", e);
+@@ -90,8 +105,9 @@
+ 
+ 	private void parseUsers(Element rootElement) throws BookDatabaseException {
+ 		NodeList elements = rootElement.getElementsByTagName("user");
+-
++        logger.debug("Parsing users!");
+ 		if (elements.getLength() == 0) {
++            logger.error("User parsing was unsuccesful!");
+ 			throw new BookDatabaseException(
+ 					"Configuration file: at least one user is required");
+ 		}
+@@ -107,6 +123,7 @@
+ 
+ 			// no missing data
+ 			if (usernameElement == null || passwordElement == null) {
++                logger.error("User parsing was unsuccesful!");
+ 				throw new BookDatabaseException(
+ 						"Configuration file: the username and password "
+ 								+ "must be specified for each user");
+@@ -118,13 +135,16 @@
+ 
+ 			// save to the model
+ 			model.users().put(user.getUsername(), user);
++
+ 		}
++        logger.debug("User parsing was succesful!");
+ 	}
+ 
+ 	private void parseBooks(Element rootElement) throws BookDatabaseException {
+ 		NodeList elements = rootElement.getElementsByTagName("book");
+-
++        logger.debug("Parsing books!");
+ 		if (elements.getLength() == 0) {
++            logger.debug("No books to parse!");
+ 			return;
+ 		}
+ 
+@@ -144,6 +164,7 @@
+ 			// no missing data
+ 			if (authorElement == null || titleElement == null
+ 					|| yearElement == null || isbnElement == null) {
++                logger.error("Book parsing was unsuccesful!");
+ 				throw new BookDatabaseException(
+ 						"Configuration file: the author, title, year and ISBN "
+ 								+ "must be specified for each book");
+@@ -159,17 +180,21 @@
+ 				// save to the model
+ 				model.books().put(book.getISBN(), book);
+ 			} catch (Exception e) {
++                logger.error("Book parsing was unsuccesful!");
+ 				throw new BookDatabaseException(
+ 						"Configuration file: invalid data (see details)", e);
+ 
+ 			}
++
+ 		}
++        logger.debug("Book parsing was succesful!");
+ 	}
+ 
+ 	private void parsePages(Element rootElement) throws BookDatabaseException {
+ 		NodeList elements = rootElement.getElementsByTagName("page");
+-
++        logger.debug("Parsing Pages!");
+ 		if (elements.getLength() == 0) {
++            logger.debug("No pages to parse!");
+ 			return;
+ 		}
+ 
+@@ -183,12 +208,15 @@
+ 			// save to the model
+ 			model.pages().put(name, content);
+ 		}
++
++        logger.debug("Page parsing was succesful!");
+ 	}
+ 
+ 	private void startServer() throws BookDatabaseException {
+ 		// open socket
+ 		try (ServerSocket serverSocket = new ServerSocket(port)) {
+-			out.println("Socket created");
++			out.println("Socket created!");
++            logger.info("Socket created! Waiting for connections!");
+ 			ExecutorService threadPool = Executors.newCachedThreadPool();
+ 
+ 			while (true) {
+@@ -197,17 +225,19 @@
+ 					Socket socket = serverSocket.accept();
+ 					out.println("Client connected: " + socket.getInetAddress()
+ 							+ ":" + socket.getPort());
+-
++                     logger.info("Client connected!");
+ 					// handle request
+ 					threadPool.execute(new RequestHandler(socket, model, out,
+ 							err));
+ 				} catch (IOException e) {
++                    logger.error("Client connection was unsuccesful!");
+ 					throw new BookDatabaseException(
+ 							"Unexpected exception occured when creating"
+ 									+ " a socket (see details)", e);
+ 				}
+ 			}
+ 		} catch (IOException e) {
++            logger.error("Starting server was unsuccesful!");
+ 			throw new BookDatabaseException(
+ 					"Unexpected exception occured when starting"
+ 							+ " the server socket (see details)", e);
+diff -Nur srcregi/BooksController.java srcuj/BooksController.java
+--- srcregi/BooksController.java	2014-05-18 03:59:16.000000000 +0200
++++ srcuj/BooksController.java	2014-05-25 14:53:38.724041100 +0200
+@@ -5,6 +5,7 @@
+ import java.util.List;
+ import java.util.UUID;
+ 
++import hu.bme.mit.ftsrg.bookdatabase.BookDatabaseApplication;
+ import org.json.JSONArray;
+ import org.json.JSONObject;
+ 
+@@ -80,11 +81,13 @@
+ 					jsonResponse.put("status", "ok");
+ 				} else {
+ 					// invalid sessionID
++                    BookDatabaseApplication.logger.info("User is not logged in.");
+ 					jsonResponse.put("status", "error");
+ 					jsonResponse.put("message", "User is not logged in");
+ 				}
+ 			}
+ 		} catch (Exception e) {
++            BookDatabaseApplication.logger.warn("Error while adding book.");
+ 			jsonResponse.put("status", "error");
+ 			jsonResponse.put("message",
+ 					e.getClass().getSimpleName() + ": " + e.getMessage());
+@@ -116,21 +119,25 @@
+ 
+ 					if (getModel().books().containsKey(isbn)) {
+ 						// book was found
++                        BookDatabaseApplication.logger.info("Book deleted.");
+ 						getModel().books().remove(isbn);
+ 						jsonResponse.put("status", "ok");
+ 					} else {
+ 						// book was not found
++                        BookDatabaseApplication.logger.info("Book not found.");
+ 						jsonResponse.put("status", "error");
+ 						jsonResponse.put("message", "The specified ISBN "
+ 								+ "was not found in the database");
+ 					}
+ 				} else {
+ 					// invalid sessionID
++                    BookDatabaseApplication.logger.info("User is not logged in.");
+ 					jsonResponse.put("status", "error");
+ 					jsonResponse.put("message", "User is not logged in");
+ 				}
+ 			}
+ 		} catch (Exception e) {
++            BookDatabaseApplication.logger.warn("Error while deleting book.");
+ 			jsonResponse.put("status", "error");
+ 			jsonResponse.put("message",
+ 					e.getClass().getSimpleName() + ": " + e.getMessage());
+diff -Nur srcregi/UserController.java srcuj/UserController.java
+--- srcregi/UserController.java	2014-05-18 03:59:16.000000000 +0200
++++ srcuj/UserController.java	2014-05-25 14:49:35.587041400 +0200
+@@ -1,5 +1,7 @@
+ package hu.bme.mit.ftsrg.bookdatabase.handler;
+ 
++import hu.bme.mit.ftsrg.bookdatabase.BookDatabaseApplication;
++import hu.bme.mit.ftsrg.bookdatabase.model.Book;
+ import hu.bme.mit.ftsrg.bookdatabase.model.BookDatabaseModel;
+ import hu.bme.mit.ftsrg.bookdatabase.model.User;
+ 
+@@ -44,16 +46,18 @@
+ 					// password ok
+ 					UUID sessionID = UUID.randomUUID();
+ 					getModel().sessions().put(sessionID, modelUser);
+-
++                    BookDatabaseApplication.logger.info("Login OK.");
+ 					jsonResponse.put("status", "ok");
+ 					jsonResponse.put("sessionID", sessionID.toString());
+ 				} else {
+ 					// password invalid
++                    BookDatabaseApplication.logger.info("Invalid credentials.");
+ 					jsonResponse.put("status", "error");
+ 					jsonResponse.put("message", "Invalid credentials");
+ 				}
+ 			}
+ 		} catch (Exception e) {
++            BookDatabaseApplication.logger.warn("Login was unsuccesful.");
+ 			jsonResponse.put("status", "error");
+ 			jsonResponse.put("message",
+ 					e.getClass().getSimpleName() + ": " + e.getMessage());
+@@ -82,14 +86,17 @@
+ 				if (user != null) {
+ 					// logged in
+ 					getModel().sessions().remove(sessionID);
++                    BookDatabaseApplication.logger.info("Logout OK.");
+ 					jsonResponse.put("status", "ok");
+ 				} else {
+ 					// not logged in
++                    BookDatabaseApplication.logger.info("User is not logged in.");
+ 					jsonResponse.put("status", "error");
+-					jsonResponse.put("message", "User is not logged in");
++					jsonResponse.put("message", "User was not logged in");
+ 				}
+ 			}
+ 		} catch (Exception e) {
++            BookDatabaseApplication.logger.warn("Logout was unsuccesful.");
+ 			jsonResponse.put("status", "error");
+ 			jsonResponse.put("message",
+ 					e.getClass().getSimpleName() + ": " + e.getMessage());

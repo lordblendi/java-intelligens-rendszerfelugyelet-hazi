@@ -1,0 +1,51 @@
+diff -Nur srcregi/BooksController.java srcuj/BooksController.java
+--- srcregi/BooksController.java	2014-05-18 03:59:16.000000000 +0200
++++ srcuj/BooksController.java	2014-05-25 14:53:38.724041100 +0200
+@@ -5,6 +5,7 @@
+ import java.util.List;
+ import java.util.UUID;
+ 
++import hu.bme.mit.ftsrg.bookdatabase.BookDatabaseApplication;
+ import org.json.JSONArray;
+ import org.json.JSONObject;
+ 
+@@ -80,11 +81,13 @@
+ 					jsonResponse.put("status", "ok");
+ 				} else {
+ 					// invalid sessionID
++                    BookDatabaseApplication.logger.info("User is not logged in.");
+ 					jsonResponse.put("status", "error");
+ 					jsonResponse.put("message", "User is not logged in");
+ 				}
+ 			}
+ 		} catch (Exception e) {
++            BookDatabaseApplication.logger.warn("Error while adding book.");
+ 			jsonResponse.put("status", "error");
+ 			jsonResponse.put("message",
+ 					e.getClass().getSimpleName() + ": " + e.getMessage());
+@@ -116,21 +119,25 @@
+ 
+ 					if (getModel().books().containsKey(isbn)) {
+ 						// book was found
++                        BookDatabaseApplication.logger.info("Book deleted.");
+ 						getModel().books().remove(isbn);
+ 						jsonResponse.put("status", "ok");
+ 					} else {
+ 						// book was not found
++                        BookDatabaseApplication.logger.info("Book not found.");
+ 						jsonResponse.put("status", "error");
+ 						jsonResponse.put("message", "The specified ISBN "
+ 								+ "was not found in the database");
+ 					}
+ 				} else {
+ 					// invalid sessionID
++                    BookDatabaseApplication.logger.info("User is not logged in.");
+ 					jsonResponse.put("status", "error");
+ 					jsonResponse.put("message", "User is not logged in");
+ 				}
+ 			}
+ 		} catch (Exception e) {
++            BookDatabaseApplication.logger.warn("Error while deleting book.");
+ 			jsonResponse.put("status", "error");
+ 			jsonResponse.put("message",
+ 					e.getClass().getSimpleName() + ": " + e.getMessage());
