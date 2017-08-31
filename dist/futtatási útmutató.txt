@@ -1,7 +1,0 @@
-A futtatáshoz Java 8-ra van szükség. 
-
-Parancssorból:
- java -jar BookDatabase.jar <port> <configxml>
- 
- Például:
- java -jar BookDatabase.jar 8082 config.xml
